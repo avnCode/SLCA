@@ -185,6 +185,8 @@ def _get_idata(dataset_name):
     name = dataset_name.lower()
     if name == 'cifar10':
         return iCIFAR10()
+    elif name == 'cifar10_224':
+        return iCIFAR10_224()
     elif name == 'cifar100':
         return iCIFAR100()
     elif name == 'cifar100_224':
