@@ -1,6 +1,9 @@
 import numpy as np
 from torchvision import datasets, transforms
 from utils.toolkit import split_images_labels
+import random
+from copy import deepcopy
+import json
 
 
 class iData(object):
@@ -11,7 +14,12 @@ class iData(object):
 
 
 class iCIFAR10(iData):
+    name = 'cifar10'
+    num_classes = 10
     use_path = False
+    with open('./exps/slca_cifar.json', 'r') as file:
+        config = json.load(file)
+    
     train_trsf = [
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(p=0.5),
@@ -30,6 +38,45 @@ class iCIFAR10(iData):
         test_dataset = datasets.cifar.CIFAR10('./data', train=False, download=True)
         self.train_data, self.train_targets = train_dataset.data, np.array(train_dataset.targets)
         self.test_data, self.test_targets = test_dataset.data, np.array(test_dataset.targets)
+        self.org_targets = deepcopy(self.train_targets)
+        if self.config['asymmetric_noise']:
+            source_class = [9, 2, 3, 5, 4]
+            target_class = [1, 0, 5, 3, 7]
+            self.add_asymmetric_noise(source_class, target_class)
+        else:
+            self.add_symmetric_noise(list(range(self.num_classes)))
+
+
+    def add_symmetric_noise(self, source_class):
+        for y in source_class:
+            random_target = [t for t in source_class if t != y]
+            tindx = [i for i, x in enumerate(self.org_targets) if x == y]
+            for i in tindx[:round(len(tindx) * self.config['corruption_percent'])]:
+                self.train_targets[i] = random.choice(random_target)
+        print("---------------------------- Symmetric Noise Added ----------------------------")
+        
+
+    def add_asymmetric_noise(self, source_class, target_class):
+        for s, t in zip(source_class, target_class):
+            cls_idx = np.where(np.array(self.org_targets) == s)[0]
+            n_noisy = int(self.config['corruption_percent'] * cls_idx.shape[0])
+            noisy_sample_index = np.random.choice(list(cls_idx), n_noisy, replace=False)
+            for idx in noisy_sample_index:
+                self.train_targets[idx] = t
+        print("---------------------------- Asymmetric Noise Added ----------------------------")
+        
+
+# Created by Avnn
+class iCIFAR10_224(iCIFAR10):                   
+    train_trsf = [
+        transforms.RandomResizedCrop(224, interpolation=3),
+        transforms.RandomHorizontalFlip(),
+        transforms.ColorJitter(brightness=63/255)
+    ]
+    test_trsf = [
+        transforms.Resize(256, interpolation=3),
+        transforms.CenterCrop(224),
+    ]
 
 
 class iCIFAR100(iData):
