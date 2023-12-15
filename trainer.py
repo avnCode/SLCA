@@ -27,7 +27,7 @@ def train(args):
 
 def _train(args):
     try:
-        os.mkdir("logs/{}_{}".format(args['model_name'], args['model_postfix']))
+        os.makedirs("logs/{}_{}".format(args['model_name'], args['model_postfix']), exist_ok=True)
     except:
         pass
     logfilename = 'logs/{}_{}/{}_{}_{}_{}_{}_{}_{}'.format(args['model_name'], args['model_postfix'], args['prefix'], args['seed'], args['model_name'], args['convnet_type'],
